@@ -1,0 +1,77 @@
+\chapter{Wprowadzenie}
+\label{cha:wprowadzenie}
+
+\begin{comment}
+TODO:
+\\- opisać sposoby poruszania się robotów - PTP, LIN, CIRC
+\\- opisać możliwe plannery - OMPL, CHOMP
+\\- opowiedzieć o funkcji mimic
+\\- opowiedzieć o problemach z przewodami do prototypowania, które przy zwielokrotnieniu razy 100 zawsze któryś nie łączy
+\\- opowiedzieć o gripperze - że powinien mieć informację zwrotną o sile ścisku, gdyż w przeciwnym razie serwomotor pracuje w zwarciu
+\\- o ESP napisać że nie wszystki piny można wykorzystać
+\\ - opisać wpływ grawitacji na poruszanie się złącz
+\\ - opisać zakłócenia jakie idą na chwytak
+\\ - napisać że najlepiej budować z gotowych modułów, które zostały już przez producenta przetestoane, gdyż rozwiązania tworzone bezpośrednio na potrzeby projektu często nie działają jak należy
+\\- poprawić plik URDF - masy i kolizje
+\\- dodać korekcję osi ramienia głównego
+\\- napisać że w MoveIt trzeba od obecnej pozycji planować, i mimo że to jest wybrane to to trzeba jeszcze raz kliknąć, gdyż wówczas będzie planowało od nie tej pozycji co chcemy i prowadziło do kolizji
+\\- napisać kod żeby bazowało od uruchomienia
+\\- można dodać wyświetlanie na ekranie że MoveIt Control
+\\- opisać że jak się omija przeszkody to trzeba na fragmenty trasę podzielić, bo nie synchronizuje się
+\\- napisać że on znajduje różne trasy dla omijania przeszkód, przy tych samych nastawach
+\\-można sprawdzać czy zawsze jest taki sam czas planowania, przy stałych nastawach
+\\- napisać o konieczności ustalania prędkości przy omijaniu przeszkód jest to konieczne
+\\ opisać dystrybucje ROSa - różnice między nimi
+
+\end{comment}
+
+% \newpage
+
+Realizowana praca magisterska stanowiła naturalne rozwinięcie wykonanego projektu inżynierskiego, w którym to zaprojektowano i zbudowano ramię robota 5DOF, czyli posiadającego 5 osi obrotu. Stworzony robot był fizycznym, w pełni funkcjonalnym urządzeniem, które jednak nie posiadało rozwiniętego kontrolera. Zasadniczo manipulatorem można było sterować jedynie ręcznie z pomocą joysticków. Znacząco ograniczało to funkcjonalność i tym samym przydatność urządzenia. Tak więc narodziła się idea, by jako pracę magisterską zaimplementować do robota należyty kontroler i tym samym swoiście sprzęt 'ożywić'. W tym celu postanowiono wykorzystać oprogramowanie ROS wraz z dodatkiem MoveIt, tak by móc realizować zadanie kinematyki odwrotnej wraz z planowaniem trajektorii ruchu. Jako iż ROS jest dedykowanym systemem dla wszelkiego typu konstrukcji robotów - czy to stacjonarnych, czy też mobilnych, toteż wybór ten był oczywisty. Tym bardziej, iż jest wykorzystywany przez sporą część światowych producentów takich jak chociażby Universal Robots, Kuka a nawet agencję NASA. 
+
+W kolejnych częściach dokumentu przedstawiono proces realizacji projektu. Na początku opisano pokrótce co było celem pracy z wszystkimi najważniejszymi wytycznymi jakie sobie założono. W dalszej kolejności zamieszczono zagadnienia merytoryczne, tak by przybliżyć nieco najważniejsze kwestie omawiane w następnych sekcjach. W rozdziale trzecim omówiono przebieg realizacji projektu. Przytoczono zarówno zmiany sprzętowe zaimplementowane w posiadanym robocie jak również prace programistyczne. Kolejną sekcję poświęcono zrealizowanym testom i eksperymentom. 
+Końcowy rozdział poświęcony jest podsumowaniu całej pracy i opisaniu wniosków jakie wyciągnięto na podstawie zrealizowanego projektu wraz z przemyśleniami na przyszłość.
+
+%---------------------------------------------------------------------------
+
+\section{Cele Pracy}
+\label{sec:celePracy}
+
+
+Celem realizowanego projektu było stworzenie cyfrowego kontrolera dedykowanego  dla
+manipulatora robotycznego w konfiguracji 5DOF wraz z implementacją
+sterowania w środowisku ROS. Sterownik ten miałby stanowić dedykowane rozwiązanie
+dla posiadanego modelu robota, który powstał  już wcześniej - w czasie realizacji projektu
+inżynierskiego. Obecny system sterowania robotem wykonany z
+wykorzystaniem mikrokontrolera STM32, miałby zostać rozbudowany o
+mikrokomputer Raspberry PI4,  umożliwiający implementację sterowania urządzeniem z poziomu komputera z którym RPi4 miałby się komunikować.
+
+Zatem prace jakie należało wykonać to uruchomienie i skonfigurowanie środowiska ROS zarówno na komputerze stacjonarnym jak i na mikrokomputerze Pi4 połączonego już bezpośrednio ze sterownikiem robota. Po tym konieczne było skomunikowanie obu wymienionych urządzeń z pomocą lokalnej sieci internetowej. W dalszym kroku należało stworzyć wirtualny model manipulatora w środowisku ROS Gazebo z wykorzystaniem języka opisu robotów urdf. Niezbędne było uruchomienie i skonfigurowanie pakietu ROS MoveIt -
+odpowiedzialnego za planowanie trajektorii ruchu oraz obliczenia
+kinematyki odwrotnej. Docelowo należało z pomocą dostępnych w MoveIt metod sterowania manipulatorem, zaplanować i przeprowadzić szereg eksperymentów związanych z kontrolą robota. Testy te miały być wykonane zarówno na modelu wirtualnym, symulowanym w programie Gazebo jak również na rzeczywistym urządzeniu wykorzystując przy tym różne typy plannerów trajektorii poruszania się ramienia.  
+
+%
+%Ponadto dobór
+%komponentów konfiguracja środowisk programistycznych, następnie
+%implementacja algorytmów i procedur sterowania, stanowi projekt
+%realizowany w środowisku ROS, zaplanowany jako nadrzędny systemem
+%kontroli.
+%Prace  jakie należy wykonać w pracy to: stworzenie  modelu
+%manipulatora w symulatorze ROS Gazebo z wykorzystaniem języka opisu
+%robotów urdf; Uruchomienie i skonfigurowanie pakietu ROS Move It -
+%odpowiedzialnego za planowanie trajektorii ruchu oraz obliczenia
+%kinematyki odwrotnej. Uruchomienie modelu symulacyjnego manipulatora i
+%sterowanie ruchem z poziomu ROS.  Zaplanowanie i wykonanie
+%eksperymentów obejmuje badania  przyjętych oraz dostępnych w Move It
+%metod sterowania manipulatorem (przeprowadzone na modelu robota w
+%środowisku Gazebo). Głównym założeniem dotyczącym budowanego systemu
+%sterowania jest, aby ten sam projekt ROS, oprócz działania w
+%środowisku symulacyjnym, mógł być uruchamiany na docelowym urządzeniu.
+%Eksperymenty zostaną przeprowadzone na modelu symulacyjnym, w
+%warunkach zbliżonych do rzeczywistych a następnie zakłada się
+%przeniesienie oprogramowania do sterownika  fizycznego robota.
+%
+
+%---------------------------------------------------------------------------
+
+\section{Rys historyczny}
